@@ -25,6 +25,7 @@ from pptx.enum.text import PP_ALIGN
 SUPPORT_EXT = ["png", "jpg", "jpeg"]
 # converted type for tif or tiff images
 CONVERT_EXT = SUPPORT_EXT[0]
+SKIP_TIF_CONVERSION = False
 # force the same image width and height
 KEEP_IMAGE_RATIO = False
 
@@ -93,15 +94,16 @@ def main():
         print (f"Warning: {output_path} already exists.")
         print ("         existing ppt may be overwritten!")
 
-    # convert tif to png if tifs exist
-    for root, _, files in os.walk(figure_path):
-        for file in files:
-            if file.lower().endswith(('.tiff', '.tif')):
-                fn = os.path.join(root, file)
-                im = open_image(fn).astype(np.float32)
-                im_name = os.path.splitext(os.path.split(fn)[1])[0]
-                im_out = os.path.join(root, im_name + f".{CONVERT_EXT}")
-                save_image(im_out, im)
+    if not SKIP_TIF_CONVERSION:
+        # convert tif to png if tifs exist
+        for root, _, files in os.walk(figure_path):
+            for file in files:
+                if file.lower().endswith(('.tiff', '.tif')):
+                    fn = os.path.join(root, file)
+                    im = open_image(fn).astype(np.float32)
+                    im_name = os.path.splitext(os.path.split(fn)[1])[0]
+                    im_out = os.path.join(root, im_name + f".{CONVERT_EXT}")
+                    save_image(im_out, im)
 
     prs = Presentation()
     # default slide width
