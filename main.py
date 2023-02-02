@@ -74,11 +74,11 @@ def save_image(fnOut, im, scale=True):
 def main():
 
     # add arguments
-    parser = argparse.ArgumentParser(description='paste figures to PPT')
+    parser = argparse.ArgumentParser(description='A tool for pasting figures to PPT')
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument('-i', type=str, default=os.path.join(current_dir, "figures mixed"), help = "default: %(default)s")
     parser.add_argument('-o', type=str, default=os.path.join(current_dir, "output"), help = "default: %(default)s")
-    parser.add_argument('-n', type=str, default="output", help = "default: %(default)s")
+    parser.add_argument('-n', type=str, default="ppt_name", help = "default: %(default)s")
     args = parser.parse_args()
     figure_path = args.i
     output_path = args.o
