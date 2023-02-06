@@ -76,13 +76,17 @@ def main():
     # add arguments
     parser = argparse.ArgumentParser(description='A tool for pasting figures to PPT')
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    parser.add_argument('-i', type=str, default=os.path.join(current_dir, "figures mixed"), help = "default: %(default)s")
+    parser.add_argument('-i', type=str, default=os.path.join(current_dir, "input"), help = "default: %(default)s")
     parser.add_argument('-o', type=str, default=os.path.join(current_dir, "output"), help = "default: %(default)s")
     parser.add_argument('-n', type=str, default="ppt_name", help = "default: %(default)s")
     args = parser.parse_args()
     figure_path = args.i
     output_path = args.o
     ppt_name = args.n
+
+    # indentation for second level of output message
+    spacing = ' '
+    num_spacing = 4
 
     if not os.path.exists(figure_path):
         print (f"ERROR: {figure_path} does not exist!")
@@ -96,14 +100,20 @@ def main():
 
     if not SKIP_TIF_CONVERSION:
         # convert tif to png if tifs exist
+        print(f"Converting tif and tiff to {CONVERT_EXT}...")
         for root, _, files in os.walk(figure_path):
             for file in files:
                 if file.lower().endswith(('.tiff', '.tif')):
                     fn = os.path.join(root, file)
-                    im = open_image(fn).astype(np.float32)
+                    
                     im_name = os.path.splitext(os.path.split(fn)[1])[0]
                     im_out = os.path.join(root, im_name + f".{CONVERT_EXT}")
+                    if os.path.exists(im_out):
+                        print (f"{spacing*num_spacing}Warning: {im_out} already exists. Conversion skipped!")
+                        continue
+                    im = open_image(fn).astype(np.float32)
                     save_image(im_out, im)
+        print("Convertion done!")
 
     prs = Presentation()
     # default slide width
@@ -143,10 +153,11 @@ def main():
     title.text = "add title here"
 
      # for images in all subdirectories
+    print(f"Pasting figures to PPT...")
     slide_number = 0
     for folder_name in os.listdir(figure_path):
         folder_path = os.path.join(figure_path, folder_name)
-        print ("folder: %s" % folder_path)
+        print (f"{spacing*num_spacing}folder: {folder_path}")
         if os.path.isdir(folder_path):
             slide = prs.slides.add_slide(prs.slide_layouts[5])
             slide_number += 1
@@ -172,7 +183,7 @@ def main():
 
             num_figures = len(fns)
             if num_figures == 0:
-                print (f"Warning: no {SUPPORT_EXT} images found in {folder_path}!")
+                print (f"{spacing*num_spacing}Warning: no {SUPPORT_EXT} images found in {folder_path}!")
                 continue
 
             for e, fn in enumerate(fns):
@@ -219,7 +230,7 @@ def main():
                         # recalculate the left position for the second row
                         figure_left = (e - max_figures_per_row)*(figure_width + figure_spacing) + figure_left
                 else:
-                    print("ERROR: support only a maximum of 8 images per slide!")
+                    print(f"{spacing*num_spacing}ERROR: support only a maximum of 8 images per slide!")
                     sys.exit()
 
                 slide.shapes.add_picture(fn, figure_left, figure_top, figure_width, figure_height)
@@ -247,7 +258,7 @@ def main():
     # save ppt
     ppt_path = os.path.join(output_path, f"{ppt_name}.pptx")
     prs.save(ppt_path)
-    print(f"Done! ppt saved to {ppt_path}.")
+    print(f"Done! PPT saved at {ppt_path}.")
 
 if __name__ == '__main__':
     main()
