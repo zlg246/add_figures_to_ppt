@@ -5,7 +5,7 @@ Supported image types: png, jpg, tif, tiff and more types (needs code revision).
 1) how to use:
 
 Step 1: prepare the Python environment (python 3.7): 
-Install the following packages to the Python environment: os, glob, argparse, tifffile, numpy, PIL, sys, pptx.
+pip install -r requirements.txt
 
 Step 2: prepare the data. 
 In a certain directory like "D:\experiments\figures", create subfolders of any valid names (e.g., "page 1", "page 2", ... "page n") and then add figures into every subfolder. For empty subfolder (no image), a blank slide will be created.

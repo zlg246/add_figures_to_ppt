@@ -22,12 +22,10 @@ from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 
 # add supported image types to the list
-SUPPORT_EXT = ["png", "jpg", "jpeg"]
+SUPPORT_EXT = ["png", "jpg", "jpeg", "gif"]
 # converted type for tif or tiff images
 CONVERT_EXT = SUPPORT_EXT[0]
 SKIP_TIF_CONVERSION = False
-# force the same image width and height
-KEEP_IMAGE_RATIO = False
 
 def scale_image(im):
     """
@@ -76,20 +74,26 @@ def main():
     # add arguments
     parser = argparse.ArgumentParser(description='A tool for pasting figures to PPT')
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    parser.add_argument('-i', type=str, default=os.path.join(current_dir, "input"), help = "default: %(default)s")
-    parser.add_argument('-o', type=str, default=os.path.join(current_dir, "output"), help = "default: %(default)s")
-    parser.add_argument('-n', type=str, default="ppt_name", help = "default: %(default)s")
+    parser.add_argument('-i', type=str, default=os.path.join(current_dir, "input"), help = "input directory, default: %(default)s")
+    parser.add_argument('-o', type=str, default=os.path.join(current_dir, "output"), help = "output directory, default: %(default)s")
+    parser.add_argument('-n', type=str, default="ppt_name", help = "ppt name, default: %(default)s")
+    parser.add_argument('-r', type=int, default=1, help = "keep image ratio: default: %(default)s")
     args = parser.parse_args()
-    figure_path = args.i
+    input_path = args.i
     output_path = args.o
+
+    # saved ppt name
     ppt_name = args.n
+
+    # keep original image ratio, or use same width and height.
+    keep_im_ratio = args.r > 0
 
     # indentation for second level of output message
     spacing = ' '
     num_spacing = 4
 
-    if not os.path.exists(figure_path):
-        print (f"ERROR: {figure_path} does not exist!")
+    if not os.path.exists(input_path):
+        print (f"ERROR: {input_path} does not exist!")
         sys.exit(-1)
 
     if not os.path.exists(output_path):
@@ -100,8 +104,8 @@ def main():
 
     if not SKIP_TIF_CONVERSION:
         # convert tif to png if tifs exist
-        print(f"Converting tif and tiff to {CONVERT_EXT}...")
-        for root, _, files in os.walk(figure_path):
+        print(f"Converting tif and tiff to {CONVERT_EXT}...") 
+        for root, _, files in os.walk(input_path):
             for file in files:
                 if file.lower().endswith(('.tiff', '.tif')):
                     fn = os.path.join(root, file)
@@ -133,9 +137,9 @@ def main():
     # set figure size and position
     slide_top_14 =  int(SH * 0.25)
     slide_top_58 =  int(SH * 0.18)
-    figure_height_12   = int(SH * 0.65)
-    figure_height_3   = int(SH * 0.5)
-    figure_height_48   = int(SH * 0.37)
+    fig_height_12   = int(SH * 0.65)
+    fig_height_3   = int(SH * 0.5)
+    fig_height_48   = int(SH * 0.37)
     figure_spacing   = int(SH * 0.04)
 
     # set textbox position for slide number
@@ -155,8 +159,8 @@ def main():
      # for images in all subdirectories
     print(f"Pasting figures to PPT...")
     slide_number = 0
-    for folder_name in os.listdir(figure_path):
-        folder_path = os.path.join(figure_path, folder_name)
+    for folder_name in os.listdir(input_path):
+        folder_path = os.path.join(input_path, folder_name)
         print (f"{spacing*num_spacing}folder: {folder_path}")
         if os.path.isdir(folder_path):
             slide = prs.slides.add_slide(prs.slide_layouts[5])
@@ -185,66 +189,78 @@ def main():
             if num_figures == 0:
                 print (f"{spacing*num_spacing}Warning: no {SUPPORT_EXT} images found in {folder_path}!")
                 continue
-
+            
             for e, fn in enumerate(fns):
-                im = open_image(fn).astype(np.float32)
-                im_name = os.path.split(fn)[1].strip()
+                im = open_image(fn, rgb2gray=False).astype(np.float32)
+                im_ratio = im.shape[1]/im.shape[0]
 
                 # set layouts for different numbers of figures
-                if num_figures <=4:
-                    figure_top = slide_top_14
+                if num_figures <= 4:
+                    fig_top = slide_top_14
                     if num_figures <= 2:
-                        figure_height = figure_height_12
+                        fig_height = fig_height_12
                     elif num_figures == 3:
-                        figure_height = figure_height_3
+                        fig_height = fig_height_3
                     elif num_figures == 4:
-                        figure_height = figure_height_48
-                    
-                    if KEEP_IMAGE_RATIO:
-                        # keep original image ratio
-                        # TO DO: output layout needs to be improved
-                        figure_width = int(figure_height * im.shape[1] / im.shape[0])
-                    else:
-                        # force the same width and height
-                        figure_width = figure_height
+                        fig_height = fig_height_48
+
                     # calcualate the left location for the first figure
-                    figure_left = (SW - figure_width * num_figures - figure_spacing * (num_figures-1))//2
-                    # adjust the left location for the current figure
-                    figure_left = e*(figure_width + figure_spacing) + figure_left
-                elif num_figures <= 8:
-                    # divide into two rows
-                    figure_top = slide_top_58
-                    figure_height = figure_height_48
-                    if KEEP_IMAGE_RATIO:
+                    if e==0:
+                        fig_left = (SW - fig_height * num_figures - figure_spacing * (num_figures-1))//2
+                    else:
+                        fig_left += fig_height + figure_spacing
+                    
+                    if keep_im_ratio:
                         # keep original image ratio
-                        figure_width = int(figure_height * im.shape[1] / im.shape[0])
+                        if im_ratio > 1.0:
+                            fig_width = fig_height
+                            fig_height = int(fig_width / im_ratio)
+                        else:
+                            fig_width = int(fig_height * im_ratio)
                     else:
                         # force the same width and height
-                        figure_width = figure_height
-                    figure_left = (SW - figure_width * max_figures_per_row - figure_spacing * (max_figures_per_row-1))//2
-                    
-                    if e <= 3:
-                        figure_left = e*(figure_width + figure_spacing) + figure_left
+                        fig_width = fig_height
+                elif num_figures <= 8:
+                    # spread to two rows
+                    fig_top = slide_top_58
+                    fig_height = fig_height_48
+
+                    if e == 0 or e == 4:
+                        fig_left = (SW - fig_height * max_figures_per_row - figure_spacing * (max_figures_per_row-1))//2
                     else:
-                        figure_top = figure_top + figure_height + figure_spacing
-                        # recalculate the left position for the second row
-                        figure_left = (e - max_figures_per_row)*(figure_width + figure_spacing) + figure_left
+                        fig_left += fig_height + figure_spacing
+
+                    if e >= 4:
+                        fig_top = fig_top + fig_height + figure_spacing
+
+                    if keep_im_ratio:
+                        # keep original image ratio
+                        if im_ratio > 1.0:
+                            fig_width = fig_height
+                            fig_height = int(fig_width / im_ratio)
+                        else:
+                            fig_width = int(fig_height * im_ratio)
+                    else:
+                        # force the same width and height
+                        fig_width = fig_height
                 else:
                     print(f"{spacing*num_spacing}ERROR: support only a maximum of 8 images per slide!")
                     sys.exit()
 
-                slide.shapes.add_picture(fn, figure_left, figure_top, figure_width, figure_height)
+                # add figure to ppt
+                slide.shapes.add_picture(fn, fig_left, fig_top, fig_width, fig_height)
 
                 # set textbox position
-                text_left = figure_left
-                text_top = figure_top + figure_height - int(SH * 0.01)
-                text_width = figure_height
+                text_left = fig_left
+                text_top = fig_top + fig_height - int(SH * 0.01)
+                text_width = fig_height
                 text_height = figure_spacing
 
                 # add image name
                 txBox = slide.shapes.add_textbox(text_left, text_top, text_width, text_height)
                 tf = txBox.text_frame
                 p = tf.paragraphs[0]
+                im_name = os.path.split(fn)[1].strip()
                 p.text = im_name
                 p.font.size = Pt(13)
 
