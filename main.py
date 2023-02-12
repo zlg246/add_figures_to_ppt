@@ -77,7 +77,7 @@ def main():
     parser.add_argument('-i', type=str, default=os.path.join(current_dir, "input"), help = "input directory, default: %(default)s")
     parser.add_argument('-o', type=str, default=os.path.join(current_dir, "output"), help = "output directory, default: %(default)s")
     parser.add_argument('-n', type=str, default="ppt_name", help = "ppt name, default: %(default)s")
-    parser.add_argument('-r', type=int, default=1, help = "keep image ratio: default: %(default)s")
+    parser.add_argument('-r', type=str, default="y", choices=['y', 'n'], help = "if keep image ratio: default: %(default)s")
     args = parser.parse_args()
     input_path = args.i
     output_path = args.o
@@ -86,7 +86,7 @@ def main():
     ppt_name = args.n
 
     # keep original image ratio, or use same width and height.
-    keep_im_ratio = args.r > 0
+    keep_im_ratio = args.r.lower() in ["y", "yes"]
 
     # indentation for second level of output message
     spacing = ' '

@@ -30,9 +30,13 @@ A tool for pasting figures to PPT
 
 optional arguments:
   -h, --help  show this help message and exit
-  -i I        default: D:\experiments\figures_to_ppt\input
-  -o O        default: D:\experiments\figures_to_ppt\output
-  -n N        default: ppt_name
+  -i I        input directory, default: D:\experiments\figures_to_ppt\input
+  -o O        output directory, default: D:\experiments\figures_to_ppt\output
+  -n N        ppt name, default: ppt_name
+  -r {y,n}    if keep image ratio: default: y
 
-notes: "-i" is for input figure directory; "-o" is for output ppt directory; "-n" is the output ppt name.
+notes: "-i" is for input figure directory; 
+     	"-o" is for output ppt directory; 
+	"-n" is the output ppt name;
+	"-r" keeping original image ratio, or using the same image width and height.
 
